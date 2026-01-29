@@ -1,0 +1,28 @@
+name: Keepalive
+on:
+  schedule:
+    - cron: "0 0 1,15 * *" # 1st and 15th of each month
+  workflow_dispatch:
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Re-enable Build Loop workflow
+        run: |
+          gh api -X PUT repos/${{ github.repository }}/actions/workflows/build_loop.yml/enable
+        env:
+          GH_TOKEN: ${{ secrets.GH_PAT }}
+      - name: Keep repo active
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GH_PAT }}
+      - name: Touch keepalive file
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          date -u > .keepalive
+          git add .keepalive
+          git diff --staged --quiet || git commit -m "chore: keepalive [skip ci]" && git push
